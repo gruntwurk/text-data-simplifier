@@ -1,0 +1,98 @@
+= GruntWurk TextDataSimplifier
+
+A command-line utility that ...
+
+
+== Command-Line Flags
+
+.Command-Line Flags
+[width="100%",cols="2,5,5",options="header"]
+|===
+| Flag | Argument | Meaning
+| `-f `| name of the input file(s) | May include wildcards.
+| `-o` | name of the output file to hold copies of all duplicated records found | If not given, then assumes the same as the input file but with a .OUT extension. Will be overwritten if already exists.
+| `--verbose` | | Displays detailed information (statistics).
+| `--debug` | | Displays how the specification file was interpreted, among other things.
+| `-l` | name of a log file to use | Will be appended to the end if already exists.
+| `-s` | name of the specification file | If not given, then assumes the same as the input file but with a .INI extension.
+| `--help` | | Get help on these flag definitions.
+|===
+
+If multiple files are specified (via wildcards), the results will be combined in a single output file.
+
+Redirecting the console output to a log file (`>> some.log`) is functionally equivalent to using the `-l` flag.
+
+
+== Specification Files
+
+A simple INI file tells TextDataSimplifier how to interpret the input file. It also controls how the tool does its work, and it controls how the findings are reported.
+
+	[File]
+	Type=Paginated
+
+	[Output]
+	Type=TSV
+	Delimiter=\T
+
+	[Part 1]
+	Pages = 1..2
+	Header Lines = 1..8
+	Data Lines = 9..-3
+	Lines Per Row = 1
+	Footer Lines = -2..n
+
+	[Part 2]
+	Pages = 3..n
+	Header Lines = 1..4
+	Data Lines = 6..n
+	Lines Per Row = 2
+
+
+Lines that begin with a semicolon are ignored as comments.
+
+=== [File] section
+
+The [File] section is required. It generally describes the input file.
+
+.File Section Keywords
+[width="100%",cols="2,3,2,8",options="header"]
+|===
+| Keyword | Possible Values | Required? | Description
+| Type | Paginated | required | Currently, TextDataSimplifier only knows how to work with fixed-field and paginated files, so this must be set to `Paginated`.
+|===
+
+Other tools in the GruntWurk suite also use INI files for specifications. One purpose of requiring the Type=Paginated line here is to ensure that if an INI file meant for one tool is accidentally sent to another tool, it will stop short as soon as it sees the wrong file type.
+
+=== [Output] section
+
+The [Output] section is required. It describes how the converted data should be expressed.
+
+.File Section Keywords
+[width="100%",cols="2,3,2,8",options="header"]
+|===
+| Keyword | Possible Values | Required? | Description
+| Type | CSV or TSV | required | Currently, TextDataSimplifier only knows how to output the converted data as delimited files, so this must be set to `CSV` or `TSV`.
+| Delimiter | any one character or the word TAB (or \T) | optional | The delimiter that is used to separate fields in the output file. The default is comma (if the type is CSV), or tab (if the type is TSV).
+|===
+
+
+
+=== Each [Part n] section
+
+At least one [Part n] section is required where n is a consecutive number starting with 1.
+
+.Part Section Keywords
+[width="100%",cols="2,3,2,8",options="header"]
+|===
+| Keyword | Possible Values | Required? | Description
+| Pages |
+| Header Lines |
+| Data Lines |
+| Lines Per Row |
+| Footer Lines |
+|===
+
+
+== See Also
+
+include::DEVELOPER_NOTES.adoc[]
