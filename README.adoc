@@ -1,6 +1,12 @@
 = GruntWurk TextDataSimplifier
 
-A command-line utility that ...
+A command-line tool that converts fixed-field paginated data (a.k.a. "line printer reports") to delimited data -- either comma-separated-values (CSV) or tab-separated (TSV).
+
+An INI file is used to specify how the paginated data is to be interpreted. For example, it declares how many lines at the top of each page make up the page header, likewise for any page footer. It also specifies where the fields of interest start and stop on each line.
+
+Data is then plucked out of the report and written to an output file. Every data "row" in the body of the page (which can be more than one wrapped line) corresponds to one line in the output file. Any data that is plucked from the page header and/or page footer is prepended to each data line as it is written.
+
+Another feature is that if a report file consists of multiple parts, each part can be processed independently. For example, if the first two pages of the report are an introduction and the last five pages are a summary, then the introduction, the main section, and the summary can each be processed separately -- with different sets of specifications -- resulting in three different output files.
 
 
 == Command-Line Flags
@@ -9,13 +15,13 @@ A command-line utility that ...
 [width="100%",cols="2,5,5",options="header"]
 |===
 | Flag | Argument | Meaning
-| `-f `| name of the input file(s) | May include wildcards.
-| `-o` | name of the output file to hold copies of all duplicated records found | If not given, then assumes the same as the input file but with a .OUT extension. Will be overwritten if already exists.
-| `--verbose` | | Displays detailed information (statistics).
-| `--debug` | | Displays how the specification file was interpreted, among other things.
-| `-l` | name of a log file to use | Will be appended to the end if already exists.
-| `-s` | name of the specification file | If not given, then assumes the same as the input file but with a .INI extension.
-| `--help` | | Get help on these flag definitions.
+| -f | name of the input file(s) | May include wildcards.
+| -o | name of the output file to hold copies of all duplicated records found | If not given, then assumes the same as the input file but with a .OUT extension. Will be overwritten if already exists.
+| --verbose | | Displays detailed information (statistics).
+| --debug | | Displays how the specification file was interpreted, among other things.
+| -l | name of a log file to use | Will be appended to the end if already exists.
+| -s | name of the specification file | If not given, then assumes the same as the input file but with a .INI extension.
+| --help | | Get help on these flag definitions.
 |===
 
 If multiple files are specified (via wildcards), the results will be combined in a single output file.
@@ -96,3 +102,5 @@ At least one [Part n] section is required where n is a consecutive number starti
 == See Also
 
 include::DEVELOPER_NOTES.adoc[]
+
+https://github.com/gruntwurk/gruntwurk-core/blob/master/DESIGN_PHILOSOPHY.adoc
