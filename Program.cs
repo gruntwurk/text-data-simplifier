@@ -4,10 +4,8 @@ using static GruntWurk.QuickLog;
 
 namespace GruntWurk {
     class Program {
-        const string APP_NAME = "TextDataSimplifier";
+        public const string APP_NAME = "TextDataSimplifier";
         public static Options options;
-        static int PartNoStart;
-        static int PartNoEnd;
         static IniFile spec;
         static int lineCount = 0;
         static int pageCount = 1;
@@ -18,11 +16,8 @@ namespace GruntWurk {
                 if (keepGoing) {
                     spec = LoadSpecfication(options.SpecFilename);
                     timestamp(APP_NAME + " Started");
-                    DetermineWhichPartsToProcess();
 
-                    for (int PartNo = PartNoStart; PartNo <= PartNoEnd; PartNo++) {
-                        TransformFilePart(PartNo);
-                    }
+                    TransformData();
                     timestamp(APP_NAME + " Done");
                 }
             } catch (Exception ex) {
@@ -69,35 +64,17 @@ namespace GruntWurk {
             return spec;
         }
 
-        private static void DetermineWhichPartsToProcess() {
-            if (options.PartNumber == 0) {
-                PartNoStart = 1;
-                var parts = spec.FindMaxSectionName("PART ").Trim().Split(StringUtils.JUST_SPACE, 3);
-                string s = (parts.Length >= 2) ? parts[1] : "";
-                try {
-                    PartNoEnd = int.Parse(s);
-                } catch (Exception) {
-                    PartNoEnd = PartNoStart;
-                }
-            } else {
-                PartNoStart = options.PartNumber;
-                PartNoEnd = PartNoStart;
-            }
-        }
 
-        private static void TransformFilePart(int PartNo) {
-            if (options.Verbose) {
-                Console.WriteLine("Processing Part {0}...", PartNo);
-            }
+        private static void TransformData() {
             lineCount = 0;
             pageCount = 0;
 
-            PageProfile prof = new PageProfile();
-            prof.InitializeFromIniFile(PartNo, spec);
+            ProcessingControls controls = new ProcessingControls(spec);
+            PageProfile prof = new PageProfile(spec);
             if (options.Debug) {
                 prof.Dump();
             }
-            using (StreamWriter outputFile = new StreamWriter(string.Format(options.OutputFilename, PartNo.ToString()))) {
+            using (StreamWriter outputFile = new StreamWriter(options.OutputFilename)) {
                 outputFile.WriteLine(prof.ColumnTitles("\t"));
                 if (!File.Exists(options.InputFilename)) {
                     throw new FileNotFoundException("Input file does not exist.", options.InputFilename);
@@ -105,7 +82,7 @@ namespace GruntWurk {
                 PageReader page = new PageReader(string.Format(options.InputFilename, options.PartNumber));
                 while (!page.AtLastPage) {
                     page.FetchNextPage();
-                    if (NumberUtils.InRange(page.PageNo, prof.PageStart, prof.PageEnd, page.PageCount)) {
+                    if (NumberUtils.InRange(page.PageNo, controls.pageStart, controls.pageEnd, page.PageCount)) {
                         foreach (string line in prof.DataValues(page.PageNo, page.PageLines, "\t")) {
                             outputFile.WriteLine(line);
                         }

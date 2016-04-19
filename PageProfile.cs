@@ -2,12 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using static GruntWurk.QuickLog;
+using static GruntWurk.NumberUtils;
 
 namespace GruntWurk {
     class PageProfile {
-        public int PartNo;
-        public int PageStart;
-        public int PageEnd;
+
         public bool HasHeader;
         public bool HasFooter;
         public bool HasCondition;
@@ -15,9 +14,10 @@ namespace GruntWurk {
         public int HeaderLinesEnd;
         public int DataLinesStart;
         public int DataLinesEnd;
-        public int DataRows;
+        public int DataLinesPerRow;
         public int FooterLinesStart;
         public int FooterLinesEnd;
+        public int GroupLinesPerRow;
         public List<FieldSpec> HeaderFields;
         public List<FieldSpec> DataFields;
         public List<FieldSpec> FooterFields;
@@ -26,33 +26,16 @@ namespace GruntWurk {
         private string ConditionValue;
         private string ConditionAction;
 
-        public PageProfile() {
-            PageStart = 1;
-            PageEnd = 0;
-            HasHeader = false;
-            HeaderLinesStart = 0;
-            HeaderLinesEnd = 0;
-            DataLinesStart = 1;
-            DataLinesEnd = 0;
-            DataRows = 1;
-            HasFooter = false;
-            HasCondition = false;
-            FooterLinesStart = 0;
-            FooterLinesEnd = 0;
-            HeaderFields = new List<FieldSpec>();
-            DataFields = new List<FieldSpec>();
-            FooterFields = new List<FieldSpec>();
-            CurrentRow = new List<string>();
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="spec"></param>
+        public PageProfile(IniFile spec) {
+            Clear();
+            InitializeFromIniFile(spec);
         }
 
-        public void SetPages(string arg) {
-            try {
-                PageStart = StartOfRangeSpec(arg);
-                PageEnd = EndOfRangeSpec(arg);
-            } catch (FormatException) {
-                Invalid("Pages", arg);
-            }
-        }
+
 
         public void SetHeaderLines(string arg) {
             try {
@@ -60,11 +43,11 @@ namespace GruntWurk {
                 HeaderLinesStart = StartOfRangeSpec(arg);
                 HeaderLinesEnd = EndOfRangeSpec(arg);
             } catch (FormatException) {
-                Invalid("Header Lines", arg);
+                throw new ArgumentException("Invalid Lines specification: " + arg, "Header section");
             }
         }
 
-        // Returns a single string with all of the field labels delimited by the given separator. The hedaer fields (if any) come first, followed by the footer fields (if any), folled by the data fields.
+        // Returns a single string with all of the field labels delimited by the given separator. The header fields (if any) come first, followed by the footer fields (if any), followed by the data fields.
         public string ColumnTitles(string Separator) {
             List<string> ColTitles = new List<string>();
             // TODO Allow a command-line option to suppress the page no
@@ -113,7 +96,7 @@ namespace GruntWurk {
             }
             for (int LineIndex = DataLinesStart; LineIndex <= AdjustedDataLinesEnd(PageLines.Count); LineIndex++) {
                 CurrentRow.Add(PageLines[LineIndex - 1]);
-                if (CurrentRow.Count >= DataRows) {
+                if (CurrentRow.Count >= DataLinesPerRow) {
                     if (HasCondition) {
                         if (ConditionFieldSpec.LineNo <= CurrentRow.Count) {
                             string trigger = StringUtils.Mid(CurrentRow[ConditionFieldSpec.LineNo - 1], ConditionFieldSpec.ColNo, ConditionFieldSpec.Width);
@@ -122,8 +105,8 @@ namespace GruntWurk {
                                     Console.WriteLine("INFO: {0} action triggered on page {1}, line {2}.", ConditionAction, PageNo, LineIndex);
                                 }
                                 // if (ConditionAction == "Next Page") {
-                                    CurrentRow.Clear();
-                                    break;
+                                CurrentRow.Clear();
+                                break;
                                 // } else {
                                 // }
                             }
@@ -151,159 +134,135 @@ namespace GruntWurk {
                 FooterLinesStart = StartOfRangeSpec(arg);
                 FooterLinesEnd = EndOfRangeSpec(arg);
             } catch (FormatException) {
-                Invalid("Footer Lines", arg);
+                throw new ArgumentException("Invalid Lines specification: " + arg, "Footer section");
             }
         }
         public void SetDataLines(string arg) {
             DataLinesStart = StartOfRangeSpec(arg);
             DataLinesEnd = EndOfRangeSpec(arg);
         }
-        public void SetDataRows(string arg) {
-            if (!int.TryParse(arg, out DataRows)) {
-                Invalid("Data Rows", arg);
+        public void SetDataLinesPerRow(string arg) {
+            if (!int.TryParse(arg, out DataLinesPerRow)) {
+                throw new ArgumentException("Invalid Lines Per Row: " + arg, "Data section");
             }
         }
-        /// <exception cref="FormatException">Only the caller knows how to report the issue in context.</exception>
-        public int StartOfRangeSpec(string RangeSpec) {
-            try {
-                int p = RangeSpec.IndexOf("..");
-                if (p > 0) {
-                    string part = RangeSpec.Substring(0, p);
-                    if (part == "N") {
-                        return 0;
-                    } else if (part.Substring(0, 1) == "N") {
-                        part = part.Substring(1);
-                    }
-                    return int.Parse(part);
-                }
-                return int.Parse(RangeSpec);
-            } catch (FormatException e) {
-                throw e;
+        public void SetGroupLinesPerRow(string arg) {
+            if (!int.TryParse(arg, out GroupLinesPerRow)) {
+                throw new ArgumentException("Invalid Lines Per Row: "+ arg,"Data section");
             }
         }
-        /// <exception cref="FormatException">Only the caller knows how to report the issue in context.</exception>
-        public int EndOfRangeSpec(string RangeSpec) {
+
+        public void AddHeaderField(string fspec) {
             try {
-                int p = RangeSpec.IndexOf("..");
-                if (p > 0) {
-                    string part = RangeSpec.Substring(p + 2).Trim().ToUpper();
-                    if (part == "N") {
-                        return 0;
-                    } else if (part.Substring(0, 1) == "N") {
-                        part = part.Substring(1);
-                    }
-                    return int.Parse(part);
-                }
-                return 0;
-            } catch (FormatException e) {
-                throw e;
-            }
-        }
-        public void AddHeaderField(string FieldName, string spec) {
-            try {
-                HeaderFields.Add(new FieldSpec(FieldName, spec));
+                HeaderFields.Add(new FieldSpec(fspec));
             } catch (FormatException) {
-                Invalid("Header Field " + FieldName, spec);
+                throw new ArgumentException("Invalid field specification: " + fspec, "Header section");
             }
         }
-        public void AddDataField(string FieldName, string spec) {
+        public void AddDataField(string fspec) {
             try {
-                DataFields.Add(new FieldSpec(FieldName, spec));
+                DataFields.Add(new FieldSpec(fspec));
             } catch (FormatException) {
-                Invalid("Data Field " + FieldName, spec);
+                throw new ArgumentException("Invalid field specification: " + fspec, "Data section");
             }
 
         }
-        public void AddFooterField(string FieldName, string spec) {
+        public void AddFooterField(string fspec) {
             try {
-                FooterFields.Add(new FieldSpec(FieldName, spec));
+                FooterFields.Add(new FieldSpec(fspec));
             } catch (FormatException) {
-                Invalid("Footer Field " + FieldName, spec);
+                throw new ArgumentException("Invalid field specification: "+fspec,"Footer section");
             }
         }
-        public void InitializeFromIniFile(int PartNo, IniFile spec) {
-            this.PartNo = PartNo;
-            string PartNoText = PartNo.ToString();
-            string MainPartSection = "PART " + PartNoText;
+        private void Clear() {
+            HasHeader = false;
+            HeaderLinesStart = 0;
+            HeaderLinesEnd = 0;
+            DataLinesStart = 1;
+            DataLinesEnd = 0;
+            DataLinesPerRow = 1;
+            HasFooter = false;
+            HasCondition = false;
+            FooterLinesStart = 0;
+            FooterLinesEnd = 0;
+            GroupLinesPerRow = 0;
+            HeaderFields = new List<FieldSpec>();
+            DataFields = new List<FieldSpec>();
+            FooterFields = new List<FieldSpec>();
+            CurrentRow = new List<string>();
+        }
+
+        private void InitializeFromIniFile(IniFile spec) {
             Dictionary<string, IniFileEntry> submap;
-            submap = spec.Sections[MainPartSection];
-            if (submap.Keys.Contains("PAGES")) {
-                SetPages(submap["PAGES"].value);
-            }
-            if (submap.Keys.Contains("HEADER LINES")) {
-                SetHeaderLines(submap["HEADER LINES"].value);
-            }
-            if (submap.Keys.Contains("DATA LINES")) {
-                SetDataLines(submap["DATA LINES"].value);
-            }
-            if (submap.Keys.Contains("LINES PER ROW")) {
-                SetDataRows(submap["LINES PER ROW"].value);
-            }
-            if (submap.Keys.Contains("FOOTER LINES")) {
-                SetFooterLines(submap["FOOTER LINES"].value);
-            }
+            SetHeaderLines(spec.GetString("Page Header", "Lines", ""));
+            SetDataLines(spec.GetString("Data", "Lines", ""));
+            SetDataLinesPerRow(spec.GetString("Data", "Lines Per Row", ""));
+            SetFooterLines(spec.GetString("Page Footer", "Lines", ""));
 
             // Header fields
-            string FieldsSection = MainPartSection + " HEADER FIELDS";
-            if (spec.Sections.Keys.Contains(FieldsSection)) {
-                submap = spec.Sections[FieldsSection];
-                foreach (string FieldName in submap.Keys) {
-                    AddHeaderField(FieldName, submap[FieldName].value);
+            if (spec.Sections.Keys.Contains("Page Header")) {
+                submap = spec.Sections["Page Header"];
+                foreach (IniFileEntry entry in submap.Values) {
+                    if (entry.key == "Field") {
+                        AddHeaderField(entry.value);
+                    }
                 }
             }
+
 
             // Data fields
-            FieldsSection = MainPartSection + " DATA FIELDS";
-            if (spec.Sections.Keys.Contains(FieldsSection)) {
-                submap = spec.Sections[FieldsSection];
-                foreach (string FieldName in submap.Keys) {
-                    AddDataField(FieldName, submap[FieldName].value);
+            if (spec.Sections.Keys.Contains("Data")) {
+                submap = spec.Sections["Data"];
+                foreach (IniFileEntry entry in submap.Values) {
+                    if (entry.key == "Field") {
+                        AddDataField(entry.value);
+                    }
                 }
             }
+
+
 
             // Footer fields
-            FieldsSection = MainPartSection + " FOOTER FIELDS";
-            if (spec.Sections.Keys.Contains(FieldsSection)) {
-                submap = spec.Sections[FieldsSection];
-                foreach (string FieldName in submap.Keys) {
-                    AddFooterField(FieldName, submap[FieldName].value);
+            if (spec.Sections.Keys.Contains("Footer")) {
+                submap = spec.Sections["Footer"];
+                foreach (IniFileEntry entry in submap.Values) {
+                    if (entry.key == "Field") {
+                        AddFooterField(entry.value);
+                    }
                 }
             }
 
-            string ConditionSection = MainPartSection + " CONDITION";
-            if (spec.Sections.Keys.Contains(ConditionSection)) {
-                submap = spec.Sections[ConditionSection];
+            if (spec.Sections.Keys.Contains("Contition")) {
+                submap = spec.Sections["Contition"];
                 if (submap.Keys.Contains("FIELD") && submap.Keys.Contains("VALUE")) {
                     HasCondition = true;
-                    ConditionFieldSpec = new FieldSpec("Condition", submap["FIELD"].value);
+                    ConditionFieldSpec = new FieldSpec(submap["FIELD"].value);
                     ConditionValue = submap["VALUE"].value;
                     if (submap.Keys.Contains("ACTION")) {
                         ConditionAction = submap["ACTION"].value;
                         if (ConditionAction != "Next Page") {
-                            Invalid("Condition Action",ConditionAction);
+                            throw new ArgumentException("Invalid Condition Action. Only 'Next Page' is currenly supported.");
                         }
                     } else {
                         log("Condition action of 'Next Page' was assumed, even though it was not specified.");
                         ConditionAction = "Next Page";
                     }
                 } else {
-                    Invalid(ConditionSection, "Field or Value specification is missing");
+                    throw new ArgumentException("Field or Value specification is missing", "Contition");
                 }
 
             }
 
         }
         public void Dump() {
-            Console.WriteLine("===== Page Profile for Part {0} =====", PartNo.ToString());
+            Console.WriteLine("===== Page Profile =====");
             List<string> elements = new List<string>();
-            elements.Add(string.Format("Part {0}", PartNo));
-            elements.Add(string.Format("Pages {0}..{1}", PageStart, PageEnd));
             if (HasHeader) {
                 elements.Add(string.Format("Header {0}..{1}", HeaderLinesStart, HeaderLinesEnd));
             } else {
                 elements.Add("No Header");
             }
-            elements.Add(string.Format("Data {0}..{1}/{2}", DataLinesStart, DataLinesEnd, DataRows));
+            elements.Add(string.Format("Data {0}..{1}/{2}", DataLinesStart, DataLinesEnd, DataLinesPerRow));
             if (HasFooter) {
                 elements.Add(string.Format("Footer {0}..{1}", FooterLinesStart, FooterLinesEnd));
             } else {
@@ -313,9 +272,7 @@ namespace GruntWurk {
             Console.WriteLine("");
         }
 
-        public void Invalid(string ParameterName, string arg) {
-            log(string.Format("Invalid {0} value: {1}", ParameterName, arg));
-        }
+
 
         /// <summary>
         /// Returns the DataLinesEnd spec, adjusted for the fact that it might be 0 or negative, in which case it's an offset with respect to the total count of lines on the current page.

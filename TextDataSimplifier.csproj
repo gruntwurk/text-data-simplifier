@@ -65,9 +65,6 @@
       <HintPath>packages\CommandLineParser.1.9.71\lib\net45\CommandLine.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="GruntWurkCore">
-      <HintPath>..\gruntwurk-core\bin\Release\GruntWurkCore.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -81,12 +78,12 @@
     <Compile Include="FieldSpec.cs" />
     <Compile Include="Options.cs" />
     <Compile Include="PageProfile.cs" />
+    <Compile Include="ProcessingControls.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="GruntWurkFileSimplifier_TemporaryKey.pfx" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
@@ -100,6 +97,12 @@
       <ProductName>.NET Framework 3.5 SP1</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\gruntwurk-core\GruntWurkCore.csproj">
+      <Project>{90c62a9e-f190-4082-b800-a2567d0af174}</Project>
+      <Name>GruntWurkCore</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
