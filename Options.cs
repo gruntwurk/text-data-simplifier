@@ -1,7 +1,5 @@
 ﻿using System.IO;
 using CommandLine;
-using CommandLine.Text;
-using System;
 
 namespace GruntWurk {
     class Options: CommonOptions {
@@ -14,9 +12,6 @@ namespace GruntWurk {
         [Option('o', "outfile", Required = false, HelpText = "Name of output file to be saved. (Default is the input filename with a .PART_{0}.TSV extension, where {0} will be filled in with the part number.)")]
         public string OutputFilename { get; set; }
 
-        [Option('p', "part", Required = false, DefaultValue = 0, HelpText = "Which part (number) to process. Zero means process all parts.")]
-        public int PartNumber { get; set; }
-
         [Option('l', "logfile", Required = false, HelpText = "Name of a log file to be appended to.")]
         public string LogFilename { get; set; }
 
@@ -25,11 +20,11 @@ namespace GruntWurk {
                 SpecFilename = Path.ChangeExtension(InputFilename, "INI");
             }
             if (OutputFilename == null) {
-                OutputFilename = Path.ChangeExtension(InputFilename, ".PART_{0}.TSV");
+                OutputFilename = Path.ChangeExtension(InputFilename, "TSV");
             }
         }
         public override string ToString() {
-            return string.Format("Input Filename: {0}\nSpec Filename: {1}\nOutput Filename: {2}\nPart: {3}", InputFilename, SpecFilename, OutputFilename, (PartNumber==0)?"All":PartNumber.ToString());
+            return string.Format("Input Filename: {0}\nSpec Filename: {1}\nOutput Filename: {2}", InputFilename, SpecFilename, OutputFilename);
         }
     }
 }

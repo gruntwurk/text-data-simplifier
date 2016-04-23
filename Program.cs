@@ -15,9 +15,10 @@ namespace GruntWurk {
                 bool keepGoing = LoadCommandLineOptions(args);
                 if (keepGoing) {
                     spec = LoadSpecfication(options.SpecFilename);
+                    ProcessingControls controls = new ProcessingControls(spec);
                     timestamp(APP_NAME + " Started");
 
-                    TransformData();
+                    TransformData(controls);
                     timestamp(APP_NAME + " Done");
                 }
             } catch (Exception ex) {
@@ -65,36 +66,30 @@ namespace GruntWurk {
         }
 
 
-        private static void TransformData() {
+        private static void TransformData(ProcessingControls controls) {
             lineCount = 0;
             pageCount = 0;
+            PageData data = new PageData(controls.prof);
 
-            ProcessingControls controls = new ProcessingControls(spec);
-            PageProfile prof = new PageProfile(spec);
-            if (options.Debug) {
-                prof.Dump();
-            }
             using (StreamWriter outputFile = new StreamWriter(options.OutputFilename)) {
-                outputFile.WriteLine(prof.ColumnTitles("\t"));
+                outputFile.WriteLine(data.ColumnTitles("\t"));
                 if (!File.Exists(options.InputFilename)) {
                     throw new FileNotFoundException("Input file does not exist.", options.InputFilename);
                 }
-                PageReader page = new PageReader(string.Format(options.InputFilename, options.PartNumber));
+                PageReader page = new PageReader(options.InputFilename);
                 while (!page.AtLastPage) {
                     page.FetchNextPage();
                     if (NumberUtils.InRange(page.PageNo, controls.pageStart, controls.pageEnd, page.PageCount)) {
-                        foreach (string line in prof.DataValues(page.PageNo, page.PageLines, "\t")) {
+                        foreach (string line in data.DataValues(page.PageNo, page.PageLines, "\t")) {
                             outputFile.WriteLine(line);
                         }
                     }
                     lineCount += page.LineCount;
                     pageCount++;
                 }
-                if (options.Verbose) {
-                    Console.WriteLine("Total Lines in input file: {0}", lineCount);
-                    Console.WriteLine("Total Pages in input file: {0}", pageCount);
-                    Console.WriteLine("");
-                }
+                info("Total Lines in input file: {0}", lineCount);
+                info("Total Pages in input file: {0}", pageCount);
+                info("");
             }
         }
     }

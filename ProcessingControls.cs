@@ -12,6 +12,8 @@ namespace GruntWurk {
         string _delimiterChar = ",";
         public int _pageStart;
         public int _pageEnd;
+        PageProfile _prof;
+
 
         // This data object is immutable (No set-accessors on any of the properties)
         public string inputFileType { get { return _inputFileType; } }
@@ -19,6 +21,7 @@ namespace GruntWurk {
         public string delimiterChar { get { return _delimiterChar; } }
         public int pageStart {  get { return _pageStart; } }
         public int pageEnd { get { return _pageEnd; } }
+        public PageProfile prof { get { return _prof; } }
 
         /// <summary>
         /// Constructor
@@ -26,11 +29,12 @@ namespace GruntWurk {
         /// <param name="spec"></param>
         public ProcessingControls(IniFile spec) {
             LoadControlSpecifications(spec);
+            _prof = new PageProfile(spec);
         }
 
         private void LoadControlSpecifications(IniFile spec) {
             _inputFileType = spec.GetString("File", "Type", "").ToUpper();
-            if (_inputFileType != "Paginated") {
+            if (_inputFileType != "PAGINATED") {
                 throw new FileLoadException(Program.APP_NAME + " currently only understands Paginated files. Spec file must positively specify Type=Paginated in the [File] section.");
             }
 
