@@ -64,7 +64,7 @@ The [File] section is required. It generally describes the input file.
 [width="100%",cols="2,3,2,8",options="header"]
 |===
 | Keyword | Possible Values | Required? | Description
-| Type | Paginated | required | Currently, TextDataSimplifier only knows how to work with fixed-field and paginated files, so this must be set to `Paginated`.
+| Type    | Paginated       | required  | Currently, TextDataSimplifier only knows how to work with fixed-field and paginated files, so this must be set to `Paginated`.
 |===
 
 Other tools in the GruntWurk suite also use INI files for specifications. One purpose of requiring the Type=Paginated line here is to ensure that if an INI file meant for one tool is accidentally sent to another tool, it will stop short as soon as it sees the wrong file type.
@@ -90,13 +90,22 @@ At least one [Part n] section is required where n is a consecutive number starti
 .Part Section Keywords
 [width="100%",cols="2,3,2,8",options="header"]
 |===
-| Keyword | Possible Values | Required? | Description
-| Pages |
-| Header Lines |
-| Data Lines |
-| Lines Per Row |
-| Footer Lines |
+| Keyword       | Possible Values | Required? | Description
+| Pages         | (range)         | required  | Which pages make up this part
+| Header Lines  | (range)         | required  | Which lines make up the page header
+| Data Lines    | (range)         | required  | Which lines make up the page body
+| Lines Per Row | (number)        | no        | How many lines per data row. 2 or more means it wraps. (Default is 1)
+| Footer Lines  | (range)         | no        | Which lines make up the pager footer (default is none)
 |===
+
+A (range) can be a single number (3) or a range with a .. operator (3..6).
+The second number must always be equal to or greater than the first.
+The second  number can also be the letter n, which means "last" (last page or last line).
+A negative number means that many from the end. 
+So "-2..n" means from the second-to-the-last to the last.
+In other words, the last two.
+
+
 
 
 == See Also
