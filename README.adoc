@@ -12,6 +12,17 @@ Any data that is plucked from the page header, page footer, and/or group header 
 Another feature is that if a report file consists of multiple parts, each part can be processed independently. 
 For example, if the first two pages of the report are an introduction and the last five pages are a summary, then the introduction, the main section, and the summary can each be processed separately -- with different sets of specifications -- resulting in three different output files.
 
+== Getting Started
+
+. Git Clone this project into an appropriate working folder (e.g. `C:\work\gruntwurk\text-data-simplifier`)
+. Git Clone the gruntwurk-core project into the same parent working folder (e.g. `C:\work\gruntwurk\gruntwurk-core`)
+. Open the TextDataSimplifier solution (`C:\work\gruntwurk\text-data-simplifier\TextDataSimplifier.sln`) in Visual Studio.
+. Build the project.
+. Open a Windows Explorer window and navigate to the `text-data-simplifier\examples` folder.
+. Double click on the sci-fi-books.bat file.
+. In the DOS command window that opens ups, scroll up and see the results of the `--help` execution, followed by the results of the regular execution.
+. See also the `sci-fi-books.TSV` and `sci-fi-books.log` files that are created.
+
 
 == Command-Line Flags
 
@@ -130,7 +141,7 @@ This section is required.
 |===
 | Keyword       | Possible Values | Required?  | Description
 | Lines         | (range)         | required   | Which lines within the page make up the body
-| Lines Per Row | (number)        | no         | A data row consists of how many lines (default is 1)
+| Lines Per Row | (number)        | optional   | A data row consists of how many lines (default is 1)
 | Field         | (field spec)    | at least 1 | Specification for a field to be extracted from the body (repeat as nec.)
 |===
 
@@ -144,7 +155,7 @@ This section is optional.
 [width="100%",cols="2,3,2,8",options="header"]
 |===
 | Keyword       | Possible Values | Required?  | Description
-| Lines Per Row | (number)        | no         | A data row consists of how many lines (default is 1)
+| Lines Per Row | (number)        | optional   | A data row consists of how many lines (default is 1)
 | Field         | (field spec)    | at least 1 | Specification for a field to be extracted from the group header (repeat as nec.)
 | Trigger       | (trigger spec)  | required   |
 |===
