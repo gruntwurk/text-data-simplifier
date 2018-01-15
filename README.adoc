@@ -2,11 +2,15 @@
 
 A command-line tool that converts fixed-field paginated data (a.k.a. "line printer reports") to delimited data -- either comma-separated-values (CSV) or tab-separated (TSV).
 
-An INI file is used to specify how the paginated data is to be interpreted. For example, it declares how many lines at the top of each page make up the page header, likewise for any page footer. It also specifies where the fields of interest start and stop on each line.
+An INI file is used to specify how the paginated data is to be interpreted. For example, it declares how many lines at the top of each page make up the page header, likewise for any page footer. 
+It also specifies where the fields of interest start and stop on each line.
 
-Data is then plucked out of the report and written to an output file. Every data "row" in the body of the page (which can be more than one wrapped line) corresponds to one line in the output file. Any data that is plucked from the page header and/or page footer is prepended to each data line as it is written.
+Data is then plucked out of the report and written to an output file. 
+Every data "row" in the body of the page (which can be more than one wrapped line) corresponds to one line in the output file. 
+Any data that is plucked from the page header, page footer, and/or group header is prepended to each data line as it is written.
 
-Another feature is that if a report file consists of multiple parts, each part can be processed independently. For example, if the first two pages of the report are an introduction and the last five pages are a summary, then the introduction, the main section, and the summary can each be processed separately -- with different sets of specifications -- resulting in three different output files.
+Another feature is that if a report file consists of multiple parts, each part can be processed independently. 
+For example, if the first two pages of the report are an introduction and the last five pages are a summary, then the introduction, the main section, and the summary can each be processed separately -- with different sets of specifications -- resulting in three different output files.
 
 
 == Command-Line Flags
@@ -14,14 +18,14 @@ Another feature is that if a report file consists of multiple parts, each part c
 .Command-Line Flags
 [width="100%",cols="2,5,5",options="header"]
 |===
-| Flag | Argument | Meaning
-| -f | name of the input file(s) | May include wildcards.
-| -o | name of the output file to hold copies of all duplicated records found | If not given, then assumes the same as the input file but with a .OUT extension. Will be overwritten if already exists.
-| --verbose | | Displays detailed information (statistics).
-| --debug | | Displays how the specification file was interpreted, among other things.
-| -l | name of a log file to use | Will be appended to the end if already exists.
-| -s | name of the specification file | If not given, then assumes the same as the input file but with a .INI extension.
-| --help | | Get help on these flag definitions.
+| Flag      | Argument                  | Meaning
+| -f        | name of the input file(s) | May include wildcards.
+| -o        | name of the output file to hold the extracted data | If not given, then assumes the same as the input file but with a .OUT extension. Will be overwritten if already exists.
+| --verbose |                           | Displays detailed information (statistics).
+| --debug   |                           | Displays how the specification file was interpreted, among other things.
+| -l        | name of a log file to use | Will be appended to the end if already exists.
+| -s        | name of the spec file     | If not given, then assumes the same as the input file but with a .INI extension.
+| --help    |                           | Get help on these flag definitions.
 |===
 
 If multiple files are specified (via wildcards), the results will be combined in a single output file.
@@ -31,7 +35,10 @@ Redirecting the console output to a log file (`>> some.log`) is functionally equ
 
 == Specification Files
 
-A simple INI file tells TextDataSimplifier how to interpret the input file. It also controls how the tool does its work, and it controls how the findings are reported.
+A simple INI file tells TextDataSimplifier how to interpret the input file. 
+It also controls how the tool does its work, and it controls how the findings are reported.
+
+	; This is a specification file for the TextDataSimplifier utility.
 
 	[File]
 	Type=Paginated
@@ -40,18 +47,25 @@ A simple INI file tells TextDataSimplifier how to interpret the input file. It a
 	Type=TSV
 	Delimiter=\T
 
-	[Part 1]
-	Pages = 1..2
-	Header Lines = 1..8
-	Data Lines = 9..-3
-	Lines Per Row = 1
-	Footer Lines = -2..n
+	[Job]
+	Pages = 1..N
 
-	[Part 2]
-	Pages = 3..n
-	Header Lines = 1..4
-	Data Lines = 6..n
+	[Page Header]
+	Lines = 1..2
+	Field = Page number, Line 1, Col 56, Width 3
+	Field = Filed Under, Line 2, Col 14, Width 1
+	Field = Report Date, Line 2, Col 50, Width 8
+
+	[Data]
+	Lines = 4..N
+	Lines Per Row = 1
+	Field = Title, Line 1, Col 1, Width 50
+	Field = Year, Line 1, Col 51, Width 4
+
+	[Group Header]
 	Lines Per Row = 2
+	Field = Author, Line 1, Col 20, Width 60
+	Trigger = ==========, Col 1, Width 10
 
 
 Lines that begin with a semicolon are ignored as comments.
@@ -76,36 +90,94 @@ The [Output] section is required. It describes how the converted data should be 
 .File Section Keywords
 [width="100%",cols="2,3,2,8",options="header"]
 |===
-| Keyword | Possible Values | Required? | Description
-| Type | CSV or TSV | required | Currently, TextDataSimplifier only knows how to output the converted data as delimited files, so this must be set to `CSV` or `TSV`.
+| Keyword   | Possible Values  | Required?  | Description
+| Type      | CSV or TSV       | required   | Currently, TextDataSimplifier only knows how to output the converted data as delimited files, so this must be set to `CSV` or `TSV`.
 | Delimiter | any one character or the word TAB (or \T) | optional | The delimiter that is used to separate fields in the output file. The default is comma (if the type is CSV), or tab (if the type is TSV).
 |===
 
 
+=== [Job] section
 
-=== Each [Part n] section
+This section is required.
 
-At least one [Part n] section is required where n is a consecutive number starting with 1.
-
-.Part Section Keywords
+.Job Section Keywords
 [width="100%",cols="2,3,2,8",options="header"]
 |===
 | Keyword       | Possible Values | Required? | Description
-| Pages         | (range)         | required  | Which pages make up this part
-| Header Lines  | (range)         | required  | Which lines make up the page header
-| Data Lines    | (range)         | required  | Which lines make up the page body
-| Lines Per Row | (number)        | no        | How many lines per data row. 2 or more means it wraps. (Default is 1)
-| Footer Lines  | (range)         | no        | Which lines make up the pager footer (default is none)
+| Pages         | (range)         | required  | Which pages of the input file to process (use 1..N for all)
 |===
+
+
+=== [Page Header] and [Page Footer] sections
+
+Both sections are optional.
+
+.Page Header Section Keywords
+[width="100%",cols="2,3,2,8",options="header"]
+|===
+| Keyword       | Possible Values | Required?  | Description
+| Lines         | (range)         | required   | Which lines within the page make up the page header
+| Field         | (field spec)    | at least 1 | Specification for a field to be extracted from the header (repeat as nec.)
+|===
+
+
+=== [Data] section
+
+This section is required.
+
+.Data Section Keywords
+[width="100%",cols="2,3,2,8",options="header"]
+|===
+| Keyword       | Possible Values | Required?  | Description
+| Lines         | (range)         | required   | Which lines within the page make up the body
+| Lines Per Row | (number)        | no         | A data row consists of how many lines (default is 1)
+| Field         | (field spec)    | at least 1 | Specification for a field to be extracted from the body (repeat as nec.)
+|===
+
+
+
+=== [Group Header] section
+
+This section is optional.
+
+.Group Header Section Keywords
+[width="100%",cols="2,3,2,8",options="header"]
+|===
+| Keyword       | Possible Values | Required?  | Description
+| Lines Per Row | (number)        | no         | A data row consists of how many lines (default is 1)
+| Field         | (field spec)    | at least 1 | Specification for a field to be extracted from the group header (repeat as nec.)
+| Trigger       | (trigger spec)  | required   |
+|===
+
+=== (Range)
 
 A (range) can be a single number (3) or a range with a .. operator (3..6).
 The second number must always be equal to or greater than the first.
-The second  number can also be the letter n, which means "last" (last page or last line).
+The second  number can also be the letter N, which means "last" (last page or last line).
 A negative number means that many from the end. 
 So "-2..n" means from the second-to-the-last to the last.
 In other words, the last two.
 
+=== (Field Spec)
 
+A field spec consists of up to 4 parts separated by commas:
+
+* The first part is the field name
+* The second-fourth parts are any of the following:
+** "Line " followed by a line number within the data row (or within the header or footer section)
+** "Col " followed by a column number within the line 
+** "Width " followed by the maximum width of the field
+
+
+=== (Trigger Spec)
+
+A trigger spec determines how to recognize the start of a group header.
+It consists of up to 3 parts separated by commas:
+
+* The first part is the value to recognize.
+* The second-third parts are any of the following:
+** "Col " followed by a column number within the line 
+** "Width " followed by the maximum width of the field
 
 
 == See Also
