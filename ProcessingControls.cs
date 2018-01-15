@@ -4,7 +4,7 @@ using static GruntWurk.QuickLog;
 
 namespace GruntWurk {
     /// <summary>
-    /// This immutable data object contains strongly typed and validated copies of certain specifications that are exressed in the given INI file.
+    /// This immutable data object contains strongly typed and validated copies of certain specifications that are expressed in the given INI file.
     /// </summary>
     class ProcessingControls {
         string _inputFileType;
