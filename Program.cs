@@ -1,52 +1,43 @@
 ﻿using System;
 using System.IO;
 using static GruntWurk.QuickLog;
+using CommandLine;
 
 namespace GruntWurk {
     class Program {
         public const string APP_NAME = "TextDataSimplifier";
-        public static Options options;
         static IniFile spec;
         static int lineCount = 0;
         static int pageCount = 1;
 
         static void Main(string[] args) {
             try {
-                bool keepGoing = LoadCommandLineOptions(args);
-                if (keepGoing) {
-                    spec = LoadSpecfication(options.SpecFilename);
-                    ProcessingControls controls = new ProcessingControls(spec);
-                    timestamp(APP_NAME + " Started");
-
-                    TransformData(controls);
-                    timestamp(APP_NAME + " Done");
-                }
-            } catch (Exception ex) {
-                log("ERROR: {0}", ex.Message);
+                Parser.Default.ParseArguments<Options>(args)
+                    .WithParsed<Options>(opts => RunSimplifier(opts));
+            } catch (Exception e) {
+                log("ERROR: {0}", e);
             }
         }
 
-        /// <summary>
-        /// Parse the command-line options directly into the "options" field of this object.
-        /// </summary>
-        /// <param name="args">The command line arguments that were passed in from the operating system.</param>
-        /// <returns>True if the program should proceed; otherwise, False if the user merely asked for a help screen.</returns>
-        private static bool LoadCommandLineOptions(string[] args) {
-            options = new Options();
-            bool proceed = CommandLine.Parser.Default.ParseArguments(args, options);
-            if (proceed) {
-                options.Validate();
+        private static void RunSimplifier(Options options) {
+            options.Validate();
 
-                InfoEnabled = options.Verbose;
-                DebugEnabled = options.Debug;
-                LogFilename = options.LogFilename;
+            InfoEnabled = options.Verbose;
+            DebugEnabled = options.Debug;
+            LogFilename = options.LogFilename;
 
-                info("\n===============================================================================");
-                info(options.ToString());
-                info("");
-            }
-            return proceed;
+            info("\n===============================================================================");
+            info(options.ToString());
+            info("");
+
+            spec = LoadSpecfication(options.SpecFilename);
+            ProcessingControls controls = new ProcessingControls(spec);
+            timestamp(APP_NAME + " Started");
+
+            TransformData(controls, options);
+            timestamp(APP_NAME + " Done");
         }
+
 
         /// <summary>
         /// Open the named file and load it into an IniFile object.
@@ -66,7 +57,7 @@ namespace GruntWurk {
         }
 
 
-        private static void TransformData(ProcessingControls controls) {
+        private static void TransformData(ProcessingControls controls, Options options) {
             lineCount = 0;
             pageCount = 0;
             PageData data = new PageData(controls.prof);
